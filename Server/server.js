@@ -1,14 +1,25 @@
 const express = require('express')
+const http = require('http')
+const {Server} = require('socket.io')
 const cors  = require("cors");
 const { default: mongoose } = require('mongoose');
 require('dotenv').config();
 
 const userRoutes = require('./Routes/user.routes');
-const { applyDefaults } = require('./Models/user.model');
 
 // Initialize the app 
 const app = express()
 
+// Socket server
+
+const server = http.createServer(app)
+
+const io = new Server( server , {
+    cors : {
+        origin : "http://localhost:5173",
+        methods : ["GET" , "POST"]
+    }
+});
 
 app.use(express.json())
 app.use(cors())
@@ -24,6 +35,18 @@ mongoose.connect(process.env.DATABASE_URL)
 const port = process.env.PORT || 3000;
 
 
+// socket is a user
+io.on('connection' , (socket) => {
+    console.log("A user connected" , socket.id);
+    
+    //  if the user disconnect.
+
+    socket.on('disconnect' ,() => {
+        console.log("User Disconnected", socket.id);
+        
+    })
+})
+
 // Register routes
 app.use('/api/users', userRoutes);
 
@@ -31,4 +54,4 @@ app.use('/api/users', userRoutes);
 app.get('/', (req, res) => res.send('Hello World!'));
 
 // Start the server
-app.listen(port, () => console.log(`Server is running on port ${port}!`));
+server.listen(port, () => console.log(`Server is running on port ${port}!`));
